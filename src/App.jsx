@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { searchMovies, getMovieById } from "./services/omdb";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import SearchBar from "./components/SearchBar";
@@ -20,15 +20,76 @@ export default function App() {
 
   const [favorites, setFavorites] = useLocalStorage("favorites", []);
 
-  async function doSearch(e) {
-    if (e) e.preventDefault();
-    if (!query.trim()) return;
-    setLoading(true); setErr(""); setItems([]); setPage(1); setDetail(null);
+  // ---------- DEFAULT HOMEPAGE (popular) ----------
+  useEffect(() => {
+    fetchDefaultMovies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function fetchDefaultMovies() {
+    // daftar kata kunci populer (bisa kamu ubah/expand)
+    const popularQueries = [
+      "Inception",
+      "The Dark Knight",
+      "Interstellar",
+      "Avengers: Endgame",
+      "Joker",
+      "Parasite",
+      "Titanic",
+      "The Matrix",
+      "Fight Club",
+      "Forrest Gump",
+    ];
+
+    setLoading(true);
+    setErr("");
+    setItems([]);
+    setPage(1);
 
     try {
-      const { items, total } = await searchMovies(query, 1);
-      setItems(items);
-      setTotalPages(Math.ceil(total / 10));
+      // jalankan paralel lalu ambil item pertama tiap hasil (jika ada)
+      const promises = popularQueries.map((q) =>
+        searchMovies(q, 1).catch(() => null)
+      );
+      const results = await Promise.all(promises);
+
+      const movies = [];
+      for (const res of results) {
+        if (res && Array.isArray(res.items) && res.items.length > 0) {
+          const first = res.items[0];
+          // hindari duplikat berdasarkan imdbID
+          if (!movies.some((m) => m.imdbID === first.imdbID)) movies.push(first);
+        }
+      }
+
+      setItems(movies);
+      setTotalPages(1);
+    } catch (e) {
+      console.error("fetchDefaultMovies error:", e);
+      setErr("Gagal memuat beranda.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ---------- SEARCH ----------
+  async function doSearch(e) {
+    if (e) e.preventDefault();
+    if (!query.trim()) {
+      // kembali ke beranda kalau query kosong
+      fetchDefaultMovies();
+      return;
+    }
+    setLoading(true);
+    setErr("");
+    setItems([]);
+    setPage(1);
+    setDetail(null);
+
+    try {
+      const { items: found, total } = await searchMovies(query, 1);
+      setItems(found || []);
+      setTotalPages(Math.ceil((total || 0) / 10));
     } catch (e) {
       setErr(e.message || "Gagal mencari");
     } finally {
@@ -36,12 +97,16 @@ export default function App() {
     }
   }
 
+  // ---------- PAGINATION ----------
   async function changePage(p) {
-    setPage(p); setLoading(true); setErr(""); setItems([]);
+    setPage(p);
+    setLoading(true);
+    setErr("");
+    setItems([]);
     try {
-      const { items, total } = await searchMovies(query, p);
-      setItems(items);
-      setTotalPages(Math.ceil(total / 10));
+      const { items: found, total } = await searchMovies(query, p);
+      setItems(found || []);
+      setTotalPages(Math.ceil((total || 0) / 10));
     } catch (e) {
       setErr(e.message || "Gagal memuat");
     } finally {
@@ -49,32 +114,23 @@ export default function App() {
     }
   }
 
+  // ---------- FAVORITES ----------
   function toggleFav(movie) {
-    setFavorites(prev => {
-      const exists = prev.some(m => m.imdbID === movie.imdbID);
-      return exists ? prev.filter(m => m.imdbID !== movie.imdbID) : [movie, ...prev];
+    setFavorites((prev) => {
+      const exists = prev.some((m) => m.imdbID === movie.imdbID);
+      return exists ? prev.filter((m) => m.imdbID !== movie.imdbID) : [movie, ...prev];
     });
   }
 
+  // ---------- DETAIL & MODAL ----------
   async function showDetail(id) {
     setDetail(null);
+    setShowModal(true);
     try {
       const data = await getMovieById(id);
       setDetail(data);
     } catch (e) {
       setDetail({ error: e.message });
-    }
-  }
-
-  async function showDetail(id) {
-    setDetail(null);
-    try {
-      const data = await getMovieById(id);
-      setDetail(data);
-      setShowModal(true);
-    } catch (e) {
-      setDetail({ error: e.message });
-      setShowModal(true);
     }
   }
 
@@ -82,27 +138,30 @@ export default function App() {
     <div className="page">
       <div className="container">
         <div className="header">
-          <h1>🎬 Movie Finder</h1>
+          <h1>🎬 iMovie</h1>
 
           <SearchBar query={query} onChange={setQuery} onSubmit={doSearch} />
 
           {err && <p className="empty">Error: {err}</p>}
           {loading && <p className="muted">Loading…</p>}
         </div>
-        
-        {!loading && !err && items.length > 0 && (
-          <>
-            <MovieGrid
-              items={items}
-              favorites={favorites}
-              onToggleFav={toggleFav}
-              onShowDetail={showDetail}
-            />
-            <Pagination page={page} total={totalPages} onChange={changePage} />
-          </>
-        )}
 
-        <FavoritesPanel items={favorites} onToggleFav={toggleFav} onPick={showDetail} />
+        <div className="content">
+          {!loading && !err && items.length > 0 && (
+            <>
+              <MovieGrid
+                items={items}
+                favorites={favorites}
+                onToggleFav={toggleFav}
+                onShowDetail={showDetail}
+              />
+            </>
+          )}
+
+          <FavoritesPanel items={favorites} onToggleFav={toggleFav} onPick={showDetail} />
+
+          <Pagination page={page} total={totalPages} onChange={changePage} />
+        </div>
 
         {/* 🔹 Modal Detail */}
         <Modal open={showModal} onClose={() => setShowModal(false)}>

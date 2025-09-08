@@ -7,16 +7,20 @@
   --accent: #22c55e;
 }
 
-html, body, #root { height: 100%; margin: 0; }
+html, body, #root { height: 100%; width: 100%; margin: 0; }
 body { background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
 
 .page { min-height: 100%; padding: 24px 16px; box-sizing: border-box; }
-.container { width: 1080px; margin: 0 auto; }
+.container { width: 100%; margin: 0 auto; }
 .header{
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  gap: 440px;
+}
+.content{
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 80px;
 }
 
 h1 { margin: 0 0 16px; font-size: 28px; }
@@ -74,9 +78,10 @@ h1 { margin: 0 0 16px; font-size: 28px; }
 }
 
 .grid {
+  width: 700px;
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   margin: 12px 0;
 }
 
@@ -138,7 +143,8 @@ h1 { margin: 0 0 16px; font-size: 28px; }
 .pagination span { color: var(--muted); }
 
 .favorites {
-  width: 600px;
+  width: 400px;
+  height: 500px;
   margin-top: 16px;
 }
 .fav-head {
