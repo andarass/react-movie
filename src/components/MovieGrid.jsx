@@ -1,6 +1,6 @@
 import MovieCard from "./MovieCard";
 
-export default function MovieGrid({ items, favorites, onToggleFav, onShowDetail }) {
+export default function MovieGrid({ items, favorites, onToggleFav, onShowDetail, onShowReview }) {
   const favSet = new Set(favorites.map(f => f.imdbID));
   return (
     <div className="grid">
@@ -11,6 +11,7 @@ export default function MovieGrid({ items, favorites, onToggleFav, onShowDetail 
           isFav={favSet.has(m.imdbID)}
           onToggleFav={onToggleFav}
           onShowDetail={onShowDetail}
+          onShowReview={onShowReview}
         />
       ))}
     </div>

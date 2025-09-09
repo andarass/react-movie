@@ -6,6 +6,7 @@ import MovieGrid from "./components/MovieGrid";
 import Pagination from "./components/Pagination";
 import FavoritesPanel from "./components/FavoritesPanel";
 import Modal from "./components/Modal";
+import { useReviews } from "./hooks/useReviews.js";
 import "./App.css";
 
 export default function App() {
@@ -17,7 +18,10 @@ export default function App() {
   const [err, setErr] = useState("");
   const [detail, setDetail] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
+  const { reviews, addReview } = useReviews();
+  const [reviewText, setReviewText] = useState("");
   const [favorites, setFavorites] = useLocalStorage("favorites", []);
 
   // ---------- DEFAULT HOMEPAGE (popular) ----------
@@ -27,7 +31,6 @@ export default function App() {
   }, []);
 
   async function fetchDefaultMovies() {
-    // daftar kata kunci populer (bisa kamu ubah/expand)
     const popularQueries = [
       "Inception",
       "The Dark Knight",
@@ -47,7 +50,6 @@ export default function App() {
     setPage(1);
 
     try {
-      // jalankan paralel lalu ambil item pertama tiap hasil (jika ada)
       const promises = popularQueries.map((q) =>
         searchMovies(q, 1).catch(() => null)
       );
@@ -57,8 +59,9 @@ export default function App() {
       for (const res of results) {
         if (res && Array.isArray(res.items) && res.items.length > 0) {
           const first = res.items[0];
-          // hindari duplikat berdasarkan imdbID
-          if (!movies.some((m) => m.imdbID === first.imdbID)) movies.push(first);
+          if (!movies.some((m) => m.imdbID === first.imdbID)) {
+            movies.push(first);
+          }
         }
       }
 
@@ -76,7 +79,6 @@ export default function App() {
   async function doSearch(e) {
     if (e) e.preventDefault();
     if (!query.trim()) {
-      // kembali ke beranda kalau query kosong
       fetchDefaultMovies();
       return;
     }
@@ -134,6 +136,13 @@ export default function App() {
     }
   }
 
+  const [reviewMovieId, setReviewMovieId] = useState(null);
+
+  function showReview(id) {
+    setReviewMovieId(id);
+    setShowReviewModal(true);
+  }
+
   return (
     <div className="page">
       <div className="container">
@@ -148,17 +157,20 @@ export default function App() {
 
         <div className="content">
           {!loading && !err && items.length > 0 && (
-            <>
-              <MovieGrid
-                items={items}
-                favorites={favorites}
-                onToggleFav={toggleFav}
-                onShowDetail={showDetail}
-              />
-            </>
+            <MovieGrid
+              items={items}
+              favorites={favorites}
+              onToggleFav={toggleFav}
+              onShowDetail={showDetail}
+              onShowReview={showReview}
+            />
           )}
 
-          <FavoritesPanel items={favorites} onToggleFav={toggleFav} onPick={showDetail} />
+          <FavoritesPanel
+            items={favorites}
+            onToggleFav={toggleFav}
+            onPick={showDetail}
+          />
 
           <Pagination page={page} total={totalPages} onChange={changePage} />
         </div>
@@ -167,16 +179,69 @@ export default function App() {
         <Modal open={showModal} onClose={() => setShowModal(false)}>
           {detail && !detail.error ? (
             <div className="detail-content">
-              <h2>{detail.Title} ({detail.Year})</h2>
-              <p>{detail.Plot}</p>
-              <p className="muted">
-                {detail.Genre} • {detail.Runtime} • ⭐ {detail.imdbRating}
-              </p>
+              <img src={detail.Poster} alt={detail.Title} />
+              <div className="detail-text">
+                <h2>
+                  {detail.Title} ({detail.Year})
+                </h2>
+                <p className="director">Directed by {detail.Director}</p>
+                <p>{detail.Plot}</p>
+                <p className="muted">
+                  {detail.Genre} • {detail.Runtime} • ⭐ {detail.imdbRating}
+                </p>
+              </div>
             </div>
           ) : detail && detail.error ? (
             <p className="empty">Detail error: {detail.error}</p>
           ) : (
             <p className="muted">Memuat detail...</p>
+          )}
+        </Modal>
+
+        {/* 🔹 Modal Review */}
+        <Modal open={showReviewModal} onClose={() => setShowReviewModal(false)}>
+          {reviewMovieId ? (
+            <div className="review-section">
+              <h2>Review untuk {items.find(m => m.imdbID === reviewMovieId)?.Title}</h2>
+              
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!reviewText.trim()) return;
+                  addReview(reviewMovieId, reviewText);
+                  setReviewText("");
+                }}
+              >
+                <textarea
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  placeholder="Tulis review kamu..."
+                  rows={3}
+                />
+                <button type="submit">Kirim</button>
+              </form>
+
+              {/* 🔹 Daftar review */}
+              <div className="review-list">
+                <h4>Review Pengguna:</h4>
+                {reviews[reviewMovieId]?.length ? (
+                  <ul>
+                    {reviews[reviewMovieId].map((r, i) => (
+                      <li key={i}>
+                        <p>{r.text}</p>
+                        <span className="muted">
+                          {new Date(r.date).toLocaleString()}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted">Belum ada review.</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="muted">Memuat review...</p>
           )}
         </Modal>
       </div>

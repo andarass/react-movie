@@ -169,6 +169,81 @@ h1 { margin: 0 0 16px; font-size: 28px; }
   border-radius: 8px; cursor: pointer; padding: 4px 8px;
 }
 
+.review-section {
+  margin-top: 20px;
+}
+
+.review-section textarea {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  resize: vertical;
+}
+
+.review-section button {
+  padding: 6px 12px;
+  background: #007bff;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+}
+
+.review-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.review-list li {
+  background: #f5f5f5;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
 .detail {
   margin-top: 16px;
+}
+
+/* Container flex: kiri gambar, kanan teks */
+.detail-content {
+  display: flex;
+  align-items: flex-start; /* sejajarkan di atas */
+  gap: 20px;              /* jarak antara gambar & teks */
+  padding: 20px;
+}
+
+/* Poster */
+.detail-content img {
+  width: 200px;
+  height: auto;
+  border-radius: 8px;
+  flex-shrink: 0; /* biar tidak mengecil */
+}
+
+/* Bagian teks */
+.detail-text {
+  display: flex;
+  flex-direction: column; /* tumpuk vertikal */
+}
+
+.detail-text h2 {
+  margin: 0 0 10px;
+  font-size: 1.5rem;
+}
+
+.detail-text p {
+  margin: 6px 0;
+  line-height: 1.4;
+}
+
+.detail-text .director {
+  margin-top: -10px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.detail-text .muted {
+  color: #666;
+  font-size: 0.9rem;
 }

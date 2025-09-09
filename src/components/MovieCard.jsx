@@ -1,4 +1,4 @@
-export default function MovieCard({ movie, isFav, onToggleFav, onShowDetail }) {
+export default function MovieCard({ movie, isFav, onToggleFav, onShowDetail, onShowReview }) {
     const posterNA = !movie.Poster || movie.Poster === "N/A";
   
     return (
@@ -20,9 +20,8 @@ export default function MovieCard({ movie, isFav, onToggleFav, onShowDetail }) {
         <div className="info">
           <h3>{movie.Title}</h3>
           <p className="meta">{movie.Year} • {movie.Type}</p>
-          <button className="button-ghost" onClick={() => onShowDetail(movie.imdbID)}>
-            Detail
-          </button>
+          <button onClick={() => onShowDetail(movie.imdbID)}>Detail</button>
+          <button onClick={() => onShowReview(movie.imdbID)}>Review</button>
         </div>
       </div>
     );
